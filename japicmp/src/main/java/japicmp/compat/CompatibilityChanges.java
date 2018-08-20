@@ -18,7 +18,6 @@ import java.util.List;
 import java.util.Map;
 
 import static japicmp.util.ModifierHelper.hasModifierLevelDecreased;
-import static japicmp.util.ModifierHelper.isNotPrivate;
 import static japicmp.util.ModifierHelper.isSynthetic;
 
 public class CompatibilityChanges {
@@ -77,14 +76,14 @@ public class CompatibilityChanges {
 	private void checkIfFieldsHaveChangedIncompatible(JApiClass jApiClass, Map<String, JApiClass> classMap) {
 		for (final JApiField field : jApiClass.getFields()) {
 			// section 13.4.6 of "Java Language Specification" SE7
-			if (isNotPrivate(field) && field.getChangeStatus() == JApiChangeStatus.REMOVED) {
+			if (field.getChangeStatus() == JApiChangeStatus.REMOVED) {
 				ArrayList<Integer> returnValues = new ArrayList<>();
 				forAllSuperclasses(jApiClass, classMap, returnValues, new OnSuperclassCallback<Integer>() {
 					@Override
 					public Integer callback(JApiClass superclass, Map<String, JApiClass> classMap, JApiChangeStatus changeStatusOfSuperclass) {
 						int movedToSuperclass = 0;
 						for (JApiField superclassField : superclass.getFields()) {
-							if (superclassField.getName().equals(field.getName()) && fieldTypeMatches(superclassField, field) && isNotPrivate(superclassField)) {
+							if (superclassField.getName().equals(field.getName()) && fieldTypeMatches(superclassField, field)) {
 								movedToSuperclass = 1;
 							}
 						}
@@ -106,7 +105,7 @@ public class CompatibilityChanges {
 				addCompatibilityChange(field, JApiCompatibilityChange.FIELD_LESS_ACCESSIBLE);
 			}
 			// section 13.4.8 of "Java Language Specification" SE7
-			if (isNotPrivate(field) && field.getChangeStatus() == JApiChangeStatus.NEW) {
+			if (field.getChangeStatus() == JApiChangeStatus.NEW) {
 				ArrayList<Integer> returnValues = new ArrayList<>();
 				forAllSuperclasses(jApiClass, classMap, returnValues, new OnSuperclassCallback<Integer>() {
 					@Override
@@ -150,19 +149,17 @@ public class CompatibilityChanges {
 				}
 			}
 			// section 13.4.9 of "Java Language Specification" SE7
-			if (isNotPrivate(field) && field.getFinalModifier().hasChangedFromTo(FinalModifier.NON_FINAL, FinalModifier.FINAL)) {
+			if (field.getFinalModifier().hasChangedFromTo(FinalModifier.NON_FINAL, FinalModifier.FINAL)) {
 				addCompatibilityChange(field, JApiCompatibilityChange.FIELD_NOW_FINAL);
 			}
 			// section 13.4.10 of "Java Language Specification" SE7
-			if (isNotPrivate(field)) {
-				if (field.getStaticModifier().hasChangedFromTo(StaticModifier.NON_STATIC, StaticModifier.STATIC)) {
-					addCompatibilityChange(field, JApiCompatibilityChange.FIELD_NOW_STATIC);
-				}
-				if (field.getStaticModifier().hasChangedFromTo(StaticModifier.STATIC, StaticModifier.NON_STATIC)) {
-					addCompatibilityChange(field, JApiCompatibilityChange.FIELD_NO_LONGER_STATIC);
-				}
+			if (field.getStaticModifier().hasChangedFromTo(StaticModifier.NON_STATIC, StaticModifier.STATIC)) {
+				addCompatibilityChange(field, JApiCompatibilityChange.FIELD_NOW_STATIC);
 			}
-			if (isNotPrivate(field) && field.getType().hasChanged()) {
+			if (field.getStaticModifier().hasChangedFromTo(StaticModifier.STATIC, StaticModifier.NON_STATIC)) {
+				addCompatibilityChange(field, JApiCompatibilityChange.FIELD_NO_LONGER_STATIC);
+			}
+			if (field.getType().hasChanged()) {
 				addCompatibilityChange(field, JApiCompatibilityChange.FIELD_TYPE_CHANGED);
 			}
 			checkIfAnnotationDeprectedAdded(field);
@@ -265,7 +262,7 @@ public class CompatibilityChanges {
 	private void checkIfConstructorsHaveChangedIncompatible(JApiClass jApiClass, Map<String, JApiClass> classMap) {
 		for (JApiConstructor constructor : jApiClass.getConstructors()) {
 			// section 13.4.6 of "Java Language Specification" SE7
-			if (isNotPrivate(constructor) && constructor.getChangeStatus() == JApiChangeStatus.REMOVED) {
+			if (constructor.getChangeStatus() == JApiChangeStatus.REMOVED) {
 				addCompatibilityChange(constructor, JApiCompatibilityChange.CONSTRUCTOR_REMOVED);
 			}
 			// section 13.4.7 of "Java Language Specification" SE7
@@ -279,7 +276,7 @@ public class CompatibilityChanges {
 	private void checkIfMethodsHaveChangedIncompatible(JApiClass jApiClass, Map<String, JApiClass> classMap) {
 		for (final JApiMethod method : jApiClass.getMethods()) {
 			// section 13.4.6 of "Java Language Specification" SE7
-			if (isNotPrivate(method) && method.getChangeStatus() == JApiChangeStatus.REMOVED) {
+			if (method.getChangeStatus() == JApiChangeStatus.REMOVED) {
 				final List<Integer> returnValues = new ArrayList<>();
 				forAllSuperclasses(jApiClass, classMap, returnValues, new OnSuperclassCallback<Integer>() {
 					@Override
@@ -308,7 +305,7 @@ public class CompatibilityChanges {
 				addCompatibilityChange(method, JApiCompatibilityChange.METHOD_LESS_ACCESSIBLE);
 			}
 			// section 13.4.12 of "Java Language Specification" SE7
-			if (isNotPrivate(method) && method.getChangeStatus() == JApiChangeStatus.NEW) {
+			if (method.getChangeStatus() == JApiChangeStatus.NEW) {
 				List<Integer> returnValues = new ArrayList<>();
 				forAllSuperclasses(jApiClass, classMap, returnValues, new OnSuperclassCallback<Integer>() {
 					@Override
@@ -344,23 +341,21 @@ public class CompatibilityChanges {
 				addCompatibilityChange(method, JApiCompatibilityChange.METHOD_RETURN_TYPE_CHANGED);
 			}
 			// section 13.4.16 of "Java Language Specification" SE7
-			if (isNotPrivate(method) && method.getAbstractModifier().hasChangedFromTo(AbstractModifier.NON_ABSTRACT, AbstractModifier.ABSTRACT)) {
+			if (method.getAbstractModifier().hasChangedFromTo(AbstractModifier.NON_ABSTRACT, AbstractModifier.ABSTRACT)) {
 				addCompatibilityChange(method, JApiCompatibilityChange.METHOD_NOW_ABSTRACT);
 			}
 			// section 13.4.17 of "Java Language Specification" SE7
-			if (isNotPrivate(method) && method.getFinalModifier().hasChangedFromTo(FinalModifier.NON_FINAL, FinalModifier.FINAL)) {
+			if (method.getFinalModifier().hasChangedFromTo(FinalModifier.NON_FINAL, FinalModifier.FINAL)) {
 				if (!(method.getStaticModifier().getOldModifier().isPresent() && method.getStaticModifier().getOldModifier().get() == StaticModifier.STATIC)) {
 					addCompatibilityChange(method, JApiCompatibilityChange.METHOD_NOW_FINAL);
 				}
 			}
 			// section 13.4.18 of "Java Language Specification" SE7
-			if (isNotPrivate(method)) {
-				if (method.getStaticModifier().hasChangedFromTo(StaticModifier.NON_STATIC, StaticModifier.STATIC)) {
-					addCompatibilityChange(method, JApiCompatibilityChange.METHOD_NOW_STATIC);
-				}
-				if (method.getStaticModifier().hasChangedFromTo(StaticModifier.STATIC, StaticModifier.NON_STATIC)) {
-					addCompatibilityChange(method, JApiCompatibilityChange.METHOD_NO_LONGER_STATIC);
-				}
+			if (method.getStaticModifier().hasChangedFromTo(StaticModifier.NON_STATIC, StaticModifier.STATIC)) {
+				addCompatibilityChange(method, JApiCompatibilityChange.METHOD_NOW_STATIC);
+			}
+			if (method.getStaticModifier().hasChangedFromTo(StaticModifier.STATIC, StaticModifier.NON_STATIC)) {
+				addCompatibilityChange(method, JApiCompatibilityChange.METHOD_NO_LONGER_STATIC);
 			}
 			checkAbstractMethod(jApiClass, classMap, method);
 			checkIfExceptionIsNowChecked(method);
@@ -540,12 +535,12 @@ public class CompatibilityChanges {
 			final List<JApiField> fields = new ArrayList<>();
 			final List<JApiField> removedAndNotOverriddenFields = new ArrayList<>();
 			for (JApiMethod jApiMethod : jApiClass.getMethods()) {
-				if (!isAbstract(jApiMethod) && jApiMethod.getChangeStatus() != JApiChangeStatus.REMOVED && isNotPrivate(jApiMethod)) {
+				if (!isAbstract(jApiMethod) && jApiMethod.getChangeStatus() != JApiChangeStatus.REMOVED) {
 					implementedMethods.add(jApiMethod);
 				}
 			}
 			for (JApiField jApiField : jApiClass.getFields()) {
-				if (jApiField.getChangeStatus() != JApiChangeStatus.REMOVED && isNotPrivate(jApiField)) {
+				if (jApiField.getChangeStatus() != JApiChangeStatus.REMOVED) {
 					fields.add(jApiField);
 				}
 			}
@@ -553,12 +548,12 @@ public class CompatibilityChanges {
 				@Override
 				public Integer callback(JApiClass superclass, Map<String, JApiClass> classMap, JApiChangeStatus changeStatusOfSuperclass) {
 					for (JApiMethod jApiMethod : superclass.getMethods()) {
-						if (!isAbstract(jApiMethod) && jApiMethod.getChangeStatus() != JApiChangeStatus.REMOVED && isNotPrivate(jApiMethod)) {
+						if (!isAbstract(jApiMethod) && jApiMethod.getChangeStatus() != JApiChangeStatus.REMOVED) {
 							implementedMethods.add(jApiMethod);
 						}
 					}
 					for (JApiField jApiField : superclass.getFields()) {
-						if (jApiField.getChangeStatus() != JApiChangeStatus.REMOVED && isNotPrivate(jApiField)) {
+						if (jApiField.getChangeStatus() != JApiChangeStatus.REMOVED) {
 							fields.add(jApiField);
 						}
 					}
